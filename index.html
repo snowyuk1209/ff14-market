@@ -51,7 +51,9 @@ button.primary{background:var(--pink);border-color:var(--pink);color:var(--on-ac
 .layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:22px;align-items:start}
 .layout > *{min-width:0}
 @media (max-width:820px){.layout{grid-template-columns:1fr}}
-.side{display:grid;gap:22px}
+.side{display:grid;grid-template-columns:minmax(0,1fr);gap:22px}
+.side > *{min-width:0}
+.watch li,.results li{min-width:0}
 .results{list-style:none;margin:12px 0 0;padding:0;max-height:340px;overflow:auto;display:grid;gap:4px}
 .results li button,.watch li button.open{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;background:none;padding:8px;border-radius:16px;font:500 14px var(--sans)}
 .results li button:hover,.watch li button.open:hover{background:var(--lav-soft)}
