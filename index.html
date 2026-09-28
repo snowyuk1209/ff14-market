@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FF14 ワールド相場チェッカー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --bg:#eef1f6; --panel:#ffffff; --ink:#18202e; --muted:#5f6b80; --line:#d8dee9;
+  --accent:#2a6fdb; --accent-soft:#e3ecfb; --gil:#a8760c; --gil-soft:#fbf1d9;
+  --good:#1f8a58; --warn:#b3661a; --stale:#9aa3b3;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0f1420; --panel:#171e2d; --ink:#e6ebf3; --muted:#95a1b6; --line:#27314a;
+    --accent:#6ea4ff; --accent-soft:#1d2c4a; --gil:#e7b54a; --gil-soft:#2e2615;
+    --good:#4cc68c; --warn:#e79a4f; --stale:#667189;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.6 var(--sans);padding:24px 16px 48px}
+.wrap{max-width:1080px;margin:0 auto;display:grid;gap:20px}
+header{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px}
+h1{font-size:22px;margin:0;letter-spacing:.02em;text-wrap:balance}
+h1 small{display:block;font-size:12px;color:var(--muted);font-weight:500;letter-spacing:.08em}
+h2{font-size:15px;margin:0 0 10px;letter-spacing:.04em}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+select,input,button{font:inherit;color:inherit}
+select,input[type=search]{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+input[type=search]{width:100%}
+button{cursor:pointer;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 12px}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.layout{display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start}
+@media (max-width:820px){.layout{grid-template-columns:1fr}}
+.side{display:grid;gap:20px}
+.results{list-style:none;margin:10px 0 0;padding:0;max-height:340px;overflow:auto;display:grid;gap:2px}
+.results li button,.watch li button.open{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;background:none;padding:6px;border-radius:8px}
+.results li button:hover,.watch li button.open:hover{background:var(--accent-soft)}
+.icon{width:32px;height:32px;border-radius:6px;flex:none;background:var(--line)}
+.cat{display:block;font-size:11px;color:var(--muted)}
+.hint{font-size:12px;color:var(--muted);margin:6px 0 0}
+.watch{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.watch li{display:flex;align-items:center;gap:4px}
+.watch .open{flex:1;min-width:0}
+.watch .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.watch .px{font:12px var(--mono);color:var(--gil)}
+.watch .rm{border:0;padding:4px 8px;color:var(--muted);background:none}
+.item-head{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.item-head .icon{width:48px;height:48px}
+.item-head h2{font-size:20px;margin:0}
+.item-head .actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:16px}
+.stat{padding:12px;border-radius:10px;background:var(--bg)}
+.stat .k{font-size:11px;color:var(--muted);letter-spacing:.08em}
+.stat .v{font:600 18px var(--mono);font-variant-numeric:tabular-nums}
+.stat.best{background:var(--gil-soft)}
+.stat.best .v{color:var(--gil)}
+.stat .s{font-size:12px;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:6px 12px}
+.seg button[aria-pressed=true]{background:var(--accent);color:#fff}
+.tablewrap{overflow-x:auto;margin-top:12px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{font-size:11px;color:var(--muted);letter-spacing:.08em;font-weight:500}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+th.n{text-align:right}
+tr.cheapest td{background:var(--gil-soft)}
+tr.cheapest td:first-child{font-weight:700}
+.badge{display:inline-block;font-size:11px;padding:1px 7px;border-radius:99px;background:var(--gil);color:var(--panel);margin-left:6px;vertical-align:1px}
+.hq{color:var(--accent);font-weight:700;font-size:12px}
+.age{font-size:12px}
+.age.fresh{color:var(--good)} .age.old{color:var(--warn)} .age.none{color:var(--stale)}
+.sec{margin-top:22px}
+.sec-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.msg{padding:14px;border-radius:10px;background:var(--bg);color:var(--muted)}
+.msg.err{color:var(--warn)}
+footer{font-size:12px;color:var(--muted)}
+footer a{color:var(--accent)}
+@media (prefers-reduced-motion:no-preference){.fade{animation:f .25s ease}@keyframes f{from{opacity:.4}to{opacity:1}}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><small>FINAL FANTASY XIV MARKET</small>ワールド相場チェッカー</h1>
+    <div class="controls">
+      <label for="dc">データセンター</label>
+      <select id="dc"></select>
+    </div>
+  </header>
+
+  <div class="layout">
+    <div class="side">
+      <section class="panel">
+        <h2>アイテム検索</h2>
+        <input id="q" type="search" placeholder="例: ハーフアップボブ、アルテマ" autocomplete="off">
+        <p class="hint">日本語名の一部で検索。マーケットで取引できるアイテムだけが出ます。</p>
+        <ul id="results" class="results"></ul>
+      </section>
+      <section class="panel">
+        <div class="sec-head"><h2>ウォッチリスト</h2><button id="refreshWatch" type="button">更新</button></div>
+        <ul id="watch" class="watch"></ul>
+        <p class="hint">DC内の最安値と出品ワールドを表示します。</p>
+      </section>
+    </div>
+
+    <main class="panel" id="main"><div class="msg">アイテムを検索して選んでください。</div></main>
+  </div>
+
+  <footer>データ: <a href="https://universalis.app/" target="_blank" rel="noopener">Universalis</a>（プレイヤーのアップロードによる非公式データ） / アイテム名: <a href="https://v2.xivapi.com/" target="_blank" rel="noopener">XIVAPI</a>。更新時刻が古いワールドは実際の価格とずれている可能性があります。</footer>
+</div>
+
+<script>
+const U = 'https://universalis.app/api/v2';
+const X = 'https://v2.xivapi.com/api';
+const TAX = 0.05;
+const DEFAULT_DC = 'Meteor';
+const FALLBACK_DCS = [{name:'Meteor',region:'Japan',worlds:[24,29,30,31,32,52,60,82]}];
+const FALLBACK_WORLDS = {24:'Belias',29:'Shinryu',30:'Unicorn',31:'Yojimbo',32:'Zeromus',52:'Valefor',60:'Ramuh',82:'Mandragora'};
+
+const $ = s => document.querySelector(s);
+const fmt = n => n == null ? '—' : Math.round(n).toLocaleString('ja-JP');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const iconUrl = p => p ? `${X}/asset?path=${encodeURIComponent(p)}&format=png` : '';
+function store(k, v){ try{ if(v === undefined) return JSON.parse(localStorage.getItem(k)); localStorage.setItem(k, JSON.stringify(v)); }catch(e){ return null; } }
+function ago(ms){
+  if(!ms) return {t:'データなし', c:'none'};
+  const m = Math.floor((Date.now() - ms) / 60000);
+  const t = m < 1 ? 'たった今' : m < 60 ? `${m}分前` : m < 1440 ? `${Math.floor(m/60)}時間前` : `${Math.floor(m/1440)}日前`;
+  return {t, c: m < 180 ? 'fresh' : m < 1440 * 2 ? '' : 'old'};
+}
+function when(sec){
+  const d = new Date(sec * 1000);
+  return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+async function getJSON(url){
+  const r = await fetch(url);
+  if(!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+const state = {
+  dcs: FALLBACK_DCS, worlds: FALLBACK_WORLDS,
+  dc: store('dc') || DEFAULT_DC,
+  item: null, data: null, filter: 'all',
+  watch: store('watch') || [{id:51747, name:'ヘアカタログ:ハーフアップボブ', icon:'ui/icon/026000/026178.tex'}],
+};
+
+/* ---------- data centers ---------- */
+async function loadDCs(){
+  try{
+    const [dcs, worlds] = await Promise.all([getJSON(`${U}/data-centers`), getJSON(`${U}/worlds`)]);
+    const order = {Japan:0, 'North-America':1, Europe:2, Oceania:3};
+    const list = dcs.filter(d => d.worlds && d.worlds.length && order[d.region] !== undefined)
+      .sort((a,b) => order[a.region] - order[b.region] || a.name.localeCompare(b.name));
+    if(list.some(d => d.name === DEFAULT_DC)) state.dcs = list;
+    if(Array.isArray(worlds) && worlds.length) state.worlds = {...FALLBACK_WORLDS, ...Object.fromEntries(worlds.map(w => [w.id, w.name]))};
+  }catch(e){ /* fallback stays */ }
+  renderDCs();
+}
+function renderDCs(){
+  const sel = $('#dc');
+  const groups = {};
+  state.dcs.forEach(d => (groups[d.region] ||= []).push(d));
+  sel.innerHTML = Object.entries(groups).map(([r, list]) =>
+    `<optgroup label="${esc(r)}">${list.map(d => `<option value="${esc(d.name)}">${esc(d.name)}</option>`).join('')}</optgroup>`).join('');
+  if(!state.dcs.some(d => d.name === state.dc)) state.dc = DEFAULT_DC;
+  sel.value = state.dc;
+}
+$('#dc').addEventListener('change', e => {
+  state.dc = e.target.value; store('dc', state.dc);
+  if(state.item) loadItem(state.item);
+  refreshWatch();
+});
+
+/* ---------- search ---------- */
+let searchTimer, searchSeq = 0;
+$('#q').addEventListener('input', e => {
+  clearTimeout(searchTimer);
+  const q = e.target.value.trim();
+  if(!q){ $('#results').innerHTML = ''; return; }
+  searchTimer = setTimeout(() => search(q), 300);
+});
+async function search(q){
+  const seq = ++searchSeq;
+  const box = $('#results');
+  box.innerHTML = '<li class="hint">検索中…</li>';
+  try{
+    let items;
+    if(/^\d+$/.test(q)){
+      const r = await getJSON(`${X}/sheet/Item/${q}?fields=Name,Icon,ItemSearchCategory.Name&language=ja`);
+      items = [{row_id:r.row_id, fields:r.fields}];
+    }else{
+      const query = `+Name~"${q.replace(/"/g,'')}" +ItemSearchCategory>=1`;
+      const r = await getJSON(`${X}/search?sheets=Item&query=${encodeURIComponent(query)}&fields=Name,Icon,ItemSearchCategory.Name&language=ja&limit=30`);
+      items = r.results;
+    }
+    if(seq !== searchSeq) return;
+    if(!items.length){ box.innerHTML = '<li class="hint">見つかりませんでした。別の言葉で試してください。</li>'; return; }
+    box.innerHTML = '';
+    items.forEach(it => {
+      const f = it.fields;
+      const item = {id: it.row_id, name: f.Name, icon: f.Icon && f.Icon.path};
+      const li = document.createElement('li');
+      li.innerHTML = `<button type="button"><img class="icon" src="${iconUrl(item.icon)}" alt="" loading="lazy"><span>${esc(item.name)}<span class="cat">${esc(f.ItemSearchCategory?.fields?.Name || '')}</span></span></button>`;
+      li.querySelector('button').onclick = () => loadItem(item);
+      box.appendChild(li);
+    });
+  }catch(e){
+    if(seq === searchSeq) box.innerHTML = `<li class="hint">検索に失敗しました（${esc(e.message)}）。少し待って再度お試しください。</li>`;
+  }
+}
+
+/* ---------- item view ---------- */
+async function loadItem(item){
+  state.item = item;
+  const main = $('#main');
+  main.innerHTML = `<div class="msg">${esc(item.name)} の相場を取得中…</div>`;
+  try{
+    state.data = await getJSON(`${U}/${encodeURIComponent(state.dc)}/${item.id}?entries=40`);
+    renderItem();
+  }catch(e){
+    main.innerHTML = `<div class="msg err">相場を取得できませんでした（${esc(e.message)}）。このアイテムがマーケットで取引できないか、Universalisが混み合っている可能性があります。</div>`;
+  }
+}
+function worldRows(d){
+  const dc = state.dcs.find(x => x.name === state.dc);
+  const ids = dc ? dc.worlds : Object.keys(d.worldUploadTimes || {}).map(Number);
+  const f = state.filter;
+  const listings = d.listings.filter(l => f === 'all' || (f === 'hq' ? l.hq : !l.hq));
+  const rows = ids.map(id => {
+    const ls = listings.filter(l => l.worldID === id);
+    const nq = ls.filter(l => !l.hq).map(l => l.pricePerUnit);
+    const hq = ls.filter(l => l.hq).map(l => l.pricePerUnit);
+    const all = ls.map(l => l.pricePerUnit);
+    return {
+      id, name: state.worlds[id] || ls[0]?.worldName || `#${id}`,
+      min: all.length ? Math.min(...all) : null,
+      minNQ: nq.length ? Math.min(...nq) : null,
+      minHQ: hq.length ? Math.min(...hq) : null,
+      count: ls.length, units: ls.reduce((s,l) => s + l.quantity, 0),
+      upload: d.worldUploadTimes?.[id],
+    };
+  });
+  rows.sort((a,b) => (a.min ?? Infinity) - (b.min ?? Infinity));
+  return rows;
+}
+function renderItem(){
+  const d = state.data, it = state.item;
+  const rows = worldRows(d);
+  const best = rows.find(r => r.min != null);
+  const inWatch = state.watch.some(w => w.id === it.id);
+  const hasHQ = d.listings.some(l => l.hq) || d.recentHistory.some(h => h.hq);
+  const sold = d.recentHistory.filter(h => state.filter === 'all' || (state.filter === 'hq' ? h.hq : !h.hq));
+
+  $('#main').innerHTML = `
+  <div class="fade">
+    <div class="item-head">
+      <img class="icon" src="${iconUrl(it.icon)}" alt="">
+      <div><h2>${esc(it.name)}</h2><span class="hint">${esc(state.dc)} ・ ID ${it.id}</span></div>
+      <div class="actions">
+        <button type="button" id="reload">再取得</button>
+        <button type="button" id="toggleWatch" class="${inWatch ? '' : 'primary'}">${inWatch ? 'ウォッチ解除' : 'ウォッチに追加'}</button>
+        <a class="hint" href="https://universalis.app/market/${it.id}" target="_blank" rel="noopener">Universalisで開く ↗</a>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat best"><div class="k">DC最安値</div><div class="v">${fmt(best?.min)}</div><div class="s">${best ? esc(best.name) + ' ・ 税込 ' + fmt(Math.ceil(best.min * (1 + TAX))) : '出品なし'}</div></div>
+      <div class="stat"><div class="k">平均取引価格</div><div class="v">${fmt(d.averagePrice)}</div><div class="s">直近の成約から</div></div>
+      <div class="stat"><div class="k">1日の販売数</div><div class="v">${d.regularSaleVelocity ? d.regularSaleVelocity.toFixed(1) : '—'}</div><div class="s">DC合計・目安</div></div>
+      <div class="stat"><div class="k">出品数</div><div class="v">${fmt(d.listings.length)}</div><div class="s">${rows.filter(r => r.count).length} ワールド</div></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-head">
+        <h2>ワールド別の最安値</h2>
+        ${hasHQ ? `<div class="seg" role="group" aria-label="品質">
+          ${[['all','すべて'],['nq','NQ'],['hq','HQ']].map(([k,l]) => `<button type="button" data-f="${k}" aria-pressed="${state.filter === k}">${l}</button>`).join('')}
+        </div>` : ''}
+      </div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>ワールド</th><th class="n">最安値</th>${hasHQ ? '<th class="n">NQ最安</th><th class="n">HQ最安</th>' : ''}<th class="n">差額</th><th class="n">出品</th><th>データ更新</th></tr></thead>
+        <tbody>${rows.map(r => {
+          const a = ago(r.upload);
+          const diff = r.min != null && best ? r.min - best.min : null;
+          return `<tr class="${r === best ? 'cheapest' : ''}">
+            <td>${esc(r.name)}${r === best ? '<span class="badge">最安</span>' : ''}</td>
+            <td class="n">${fmt(r.min)}</td>
+            ${hasHQ ? `<td class="n">${fmt(r.minNQ)}</td><td class="n">${fmt(r.minHQ)}</td>` : ''}
+            <td class="n">${diff == null ? '—' : diff === 0 ? '±0' : '+' + fmt(diff)}</td>
+            <td class="n">${r.count}</td>
+            <td><span class="age ${a.c}">${a.t}</span></td></tr>`;
+        }).join('')}</tbody>
+      </table></div>
+    </div>
+
+    <div class="sec">
+      <h2>直近の取引履歴</h2>
+      ${sold.length ? `<div class="tablewrap"><table>
+        <thead><tr><th>日時</th><th>ワールド</th><th class="n">単価</th><th class="n">個数</th><th>品質</th></tr></thead>
+        <tbody>${sold.slice(0, 25).map(h => `<tr><td>${when(h.timestamp)}</td><td>${esc(h.worldName)}</td><td class="n">${fmt(h.pricePerUnit)}</td><td class="n">${h.quantity}</td><td>${h.hq ? '<span class="hq">HQ</span>' : 'NQ'}</td></tr>`).join('')}</tbody>
+      </table></div>` : '<div class="msg">取引履歴はまだありません。</div>'}
+    </div>
+  </div>`;
+
+  $('#reload').onclick = () => loadItem(it);
+  $('#toggleWatch').onclick = () => {
+    if(inWatch) state.watch = state.watch.filter(w => w.id !== it.id);
+    else state.watch.push({id: it.id, name: it.name, icon: it.icon});
+    store('watch', state.watch); renderItem(); refreshWatch();
+  };
+  document.querySelectorAll('.seg button').forEach(b => b.onclick = () => { state.filter = b.dataset.f; renderItem(); });
+}
+
+/* ---------- watchlist ---------- */
+const watchPrices = {};
+function renderWatch(){
+  const ul = $('#watch');
+  if(!state.watch.length){ ul.innerHTML = '<li class="hint">まだありません。アイテムを開いて「ウォッチに追加」を押してください。</li>'; return; }
+  ul.innerHTML = '';
+  state.watch.forEach(w => {
+    const p = watchPrices[w.id];
+    const li = document.createElement('li');
+    li.innerHTML = `<button type="button" class="open"><img class="icon" src="${iconUrl(w.icon)}" alt="" loading="lazy">
+      <span style="min-width:0"><span class="nm">${esc(w.name)}</span>
+      <span class="px">${p === undefined ? '取得中…' : p ? `${fmt(p.price)}${p.hq ? ' HQ' : ''} ・ ${esc(p.world)}` : '出品なし'}</span></span></button>
+      <button type="button" class="rm" aria-label="${esc(w.name)} をウォッチから外す">×</button>`;
+    li.querySelector('.open').onclick = () => loadItem(w);
+    li.querySelector('.rm').onclick = () => { state.watch = state.watch.filter(x => x.id !== w.id); store('watch', state.watch); renderWatch(); if(state.item?.id === w.id) renderItem(); };
+    ul.appendChild(li);
+  });
+}
+async function refreshWatch(){
+  state.watch.forEach(w => delete watchPrices[w.id]);
+  renderWatch();
+  if(!state.watch.length) return;
+  const ids = state.watch.map(w => w.id);
+  try{
+    for(let i = 0; i < ids.length; i += 50){
+      const chunk = ids.slice(i, i + 50);
+      const r = await getJSON(`${U}/${encodeURIComponent(state.dc)}/${chunk.join(',')}?listings=5&entries=0`);
+      const map = chunk.length === 1 ? {[chunk[0]]: r} : r.items;
+      chunk.forEach(id => {
+        const l = map?.[id]?.listings?.[0];
+        watchPrices[id] = l ? {price: l.pricePerUnit, world: l.worldName, hq: l.hq} : null;
+      });
+    }
+  }catch(e){ ids.forEach(id => { if(watchPrices[id] === undefined) watchPrices[id] = null; }); }
+  renderWatch();
+}
+$('#refreshWatch').onclick = refreshWatch;
+
+/* ---------- start ---------- */
+(async () => {
+  renderDCs(); renderWatch();
+  await loadDCs();
+  refreshWatch();
+  loadItem(state.watch[0] || {id:51747, name:'ヘアカタログ:ハーフアップボブ', icon:'ui/icon/026000/026178.tex'});
+})();
+</script>
+</body>
+</html>
