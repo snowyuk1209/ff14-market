@@ -34,12 +34,12 @@
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font:400 15px/1.55 var(--sans);letter-spacing:-.01em;-webkit-font-smoothing:antialiased;padding:0 16px 64px}
-.wrap{max-width:1080px;margin:0 auto;display:grid;gap:24px}
+.wrap{max-width:1080px;margin:0 auto;display:grid;gap:20px}
 header{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;margin:0 -16px;padding:14px 16px;background:var(--bar);
   -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--line);
   display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
 .brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-.eyebrow{font:600 12px var(--display);color:var(--faint);letter-spacing:0}
+.eyebrow{font:600 15px var(--display);color:var(--ink);letter-spacing:-.01em}
 h1{font:600 19px/1.2 var(--display);margin:0;letter-spacing:-.02em}
 .hero{padding-top:20px}
 .hero p{margin:0;font:600 13px var(--display);color:var(--blue)}
@@ -123,14 +123,13 @@ footer a{color:var(--blue);text-decoration:none}
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>ワールド相場チェッカー</h1><span class="eyebrow">FF14 Market</span></div>
+    <div class="brand"><span class="eyebrow">FF14 Market</span></div>
     <div class="controls">
       <label for="dc">データセンター</label>
       <select id="dc"></select>
     </div>
   </header>
 
-  <section class="hero"><p>Universalis ライブデータ</p><h2>いちばん安いワールドが、すぐわかる。</h2></section>
 
   <div class="layout">
     <div class="side">
